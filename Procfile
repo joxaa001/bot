@@ -1,1 +1,1 @@
-worker: python taraqqiyot.py
+worker: python bot.py
