@@ -11,29 +11,24 @@ from telegram.ext import (
 )
 import yt_dlp
 
-# Logging sozlash
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
 logger = logging.getLogger(__name__)
 
-# States
 MAIN_MENU, TEXT_STYLE, TEXT_STYLE_SELECT, VIDEO_ROUND, MUSIC_SEARCH = range(5)
 
-# User data storage
 user_data = {}
 
-# Kategoriyalar
 categories = {
     "1": "📝 Matn Stilizatsiyasi",
     "2": "⭕️ Video Dumaloq qilish",
     "3": "🎵 Musiqa/Video Qidiruv"
 }
-
+BOT_TOKEN
 CONTACT = "📞 Murojat uchun: @zzb050"
 
-# ==================== MATN STILLARI ====================
 def apply_text_style(text, style):
     cleaned_text = ''
     for char in text:
@@ -85,10 +80,7 @@ def apply_text_style(text, style):
 
     return fonts.get(style, lambda t: t)(text)
 
-
-# ==================== YUKLAB OLISH FUNKSIYALARI ====================
 def get_ydl_opts_base():
-    """Asosiy yt-dlp sozlamalari"""
     return {
         'quiet': True,
         'no_warnings': True,
@@ -100,7 +92,6 @@ def get_ydl_opts_base():
 
 
 def search_youtube(query):
-    """YouTube'dan tezkor qidiruv"""
     try:
         opts = get_ydl_opts_base()
         opts.update({
@@ -125,7 +116,6 @@ def search_youtube(query):
 
 
 def download_mp3(url):
-    """MP3 yuklab olish"""
     try:
         timestamp = int(time.time())
         base_path = f'downloads/audio_{timestamp}'
@@ -145,7 +135,6 @@ def download_mp3(url):
         with yt_dlp.YoutubeDL(opts) as ydl:
             ydl.download([url])
 
-        # Faylni topish
         for ext in ['mp3', 'm4a', 'webm', 'opus']:
             path = f'{base_path}.{ext}'
             if os.path.exists(path) and os.path.getsize(path) > 0:
@@ -158,7 +147,6 @@ def download_mp3(url):
 
 
 def download_video(url, quality):
-    """Video yuklab olish"""
     try:
         timestamp = int(time.time())
         base_path = f'downloads/video_{timestamp}'
@@ -180,7 +168,6 @@ def download_video(url, quality):
         with yt_dlp.YoutubeDL(opts) as ydl:
             ydl.download([url])
 
-        # Faylni topish
         for ext in ['mp4', 'webm', 'mkv']:
             path = f'{base_path}.{ext}'
             if os.path.exists(path) and os.path.getsize(path) > 0:
@@ -193,7 +180,6 @@ def download_video(url, quality):
 
 
 def download_link_video(url):
-    """Social media link yuklab olish"""
     try:
         timestamp = int(time.time())
         base_path = f'downloads/link_{timestamp}'
@@ -211,7 +197,6 @@ def download_link_video(url):
             if not info:
                 return None
 
-        # Faylni topish
         for ext in ['mp4', 'webm', 'mkv', 'm4a']:
             path = f'{base_path}.{ext}'
             if os.path.exists(path) and os.path.getsize(path) > 0:
@@ -223,7 +208,6 @@ def download_link_video(url):
         return None
 
 
-# ==================== YORDAMCHI FUNKSIYALAR ====================
 def main_keyboard():
     keyboard = []
     for key, value in categories.items():
@@ -259,7 +243,6 @@ async def safe_delete(msg):
         pass
 
 
-# ==================== START ====================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message:
         await update.message.reply_text(
@@ -284,7 +267,6 @@ async def back_to_main(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return MAIN_MENU
 
 
-# ==================== KATEGORIYA ====================
 async def category_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -306,7 +288,6 @@ async def category_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return MAIN_MENU
 
 
-# ==================== 1. MATN STILLARI ====================
 STYLE_KEYBOARD = [
     [InlineKeyboardButton("🔤 Bold (Qalin)", callback_data="style_thick")],
     [InlineKeyboardButton("📐 Italic (Yotiq)", callback_data="style_slant")],
@@ -379,7 +360,6 @@ async def more_styles_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
     return TEXT_STYLE_SELECT
 
 
-# ==================== 2. VIDEO DUMALOQ ====================
 async def video_round_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     status = await update.message.reply_text("⏳ Video qayta ishlanmoqda...")
     try:
@@ -421,7 +401,6 @@ async def video_round_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
     return MAIN_MENU
 
 
-# ==================== 3. MUSIQA/VIDEO ====================
 async def music_search_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query_text = update.message.text
     uid = update.message.from_user.id
@@ -434,7 +413,6 @@ async def music_search_handler(update: Update, context: ContextTypes.DEFAULT_TYP
     if is_link:
         status_msg = await update.message.reply_text("⏳ Video yuklanmoqda...")
         try:
-            # Async thread'da yuklab olish (botni bloklamamaydi)
             loop = asyncio.get_event_loop()
             filename = await loop.run_in_executor(None, download_link_video, query_text)
 
@@ -464,11 +442,10 @@ async def music_search_handler(update: Update, context: ContextTypes.DEFAULT_TYP
 
             await safe_delete(status_msg)
 
-            # URL saqlash MP3 uchun
             if uid not in user_data:
                 user_data[uid] = {}
             user_data[uid]["selected_url"] = query_text
-            user_data[uid].pop("results", None)  # Oldingi natijalarni tozalash
+            user_data[uid].pop("results", None)
 
             await update.message.reply_text(
                 f"✅ Video yuklandi!\n\nYana yuklab olishni xohlaysizmi?\n\n{CONTACT}",
@@ -493,7 +470,6 @@ async def music_search_handler(update: Update, context: ContextTypes.DEFAULT_TYP
     else:
         status_msg = await update.message.reply_text("🔍 Qidirilmoqda...")
 
-        # Async thread'da qidirish
         loop = asyncio.get_event_loop()
         results = await loop.run_in_executor(None, search_youtube, query_text)
 
@@ -579,7 +555,6 @@ async def send_mp3(update: Update, context: ContextTypes.DEFAULT_TYPE):
     status_msg = await query.message.reply_text("🎧 MP3 yuklanmoqda...")
 
     try:
-        # Async thread'da yuklab olish
         loop = asyncio.get_event_loop()
         file_path = await loop.run_in_executor(None, download_mp3, url)
 
@@ -641,7 +616,6 @@ async def send_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
     status_msg = await query.message.reply_text(f"🎬 {quality}p yuklanmoqda...")
 
     try:
-        # Async thread'da yuklab olish
         loop = asyncio.get_event_loop()
         file_path = await loop.run_in_executor(None, download_video, url, quality)
 
@@ -690,15 +664,16 @@ async def send_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return MUSIC_SEARCH
 
 
-# ==================== BEKOR QILISH ====================
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("❌ Bekor qilindi.")
     return ConversationHandler.END
 
 
-# ==================== MAIN ====================
 def main():
-    TOKEN = "8318843317:AAFLmqq_x_qn57btjj_HZS2yvNqowK4OYrw"
+    # Token environment variable'dan o'qiladi (xavfsiz!)
+    TOKEN = os.environ.get("8318843317:AAE-WqEfYWcbLgss1mtDCLYdJ4YYtooQYhc")
+    if not TOKEN:
+        raise ValueError("BOT_TOKEN environment variable o'rnatilmagan! Railway Variables ga BOT_TOKEN qo'shing.")
 
     os.makedirs("downloads", exist_ok=True)
 
@@ -752,7 +727,7 @@ def main():
 
         application.run_polling(
             allowed_updates=Update.ALL_TYPES,
-            drop_pending_updates=True  # Eski xabarlarni o'tkazib yuborish
+            drop_pending_updates=True
         )
 
     except Exception as e:
