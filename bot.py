@@ -26,7 +26,7 @@ categories = {
     "2": "⭕️ Video Dumaloq qilish",
     "3": "🎵 Musiqa/Video Qidiruv"
 }
-BOT_TOKEN
+
 CONTACT = "📞 Murojat uchun: @zzb050"
 
 def apply_text_style(text, style):
